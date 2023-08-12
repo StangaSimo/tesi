@@ -1,0 +1,8 @@
+
+ass.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <.text>:
+   0:	3021fff0 	addik	r1, r1, -16

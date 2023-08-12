@@ -1,0 +1,12 @@
+
+prova.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	20200000 	addi	r1, r0, 0
+   4:	2040ffec 	addi	r2, r0, -20
+   8:	2021000a 	addi	r1, r1, 10
+   c:	20420001 	addi	r2, r2, 1
+  10:	bc02fff8 	beqi	r2, -8		// 8

@@ -1,0 +1,38 @@
+compilatore: /tools/Xilinx/Vivado/2023.1/gnu/microblaze/lin/bin/mb-gcc
+
+mb-gcc -o test.o -c main.c
+
+mb-obj -dS test.o > test.txt
+
+mb-gcc -S main.c 
+
+solo per il .text 
+objcopy -j .text -O binary -I elf32-little prova.o prova.text 
+
+mb-gcc -o prova/prova.o -c prova/main.s && objcopy -j .text -O binary -I elf32-little prova/prova.o prova.text
+
+little endian: ovvero il bit piu significante va in fondo e a[0] ha il meno significante ovvero 1 o 0
+
+xxd -b prova/main.text
+
+00251000
+00000000001001010001000000000000
+
+00102500
+00000000000100000010010100000000
+
+
+00000000001001010001000000000000
+
+
+
+00000000001001010001000000000000
+00000000001001010001000000000000
+
+1111111011101100
+1111111111101100
+1111111101101100
+1111111011101100
+1111111111011100
+
+11101100

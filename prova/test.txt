@@ -1,0 +1,28 @@
+
+test.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	3021ffd4 	addik	r1, r1, -44
+   4:	f9e10000 	swi	r15, r1, 0
+   8:	fa610028 	swi	r19, r1, 40
+   c:	12610000 	addk	r19, r1, r0
+  10:	30600064 	addik	r3, r0, 100
+  14:	f873001c 	swi	r3, r19, 28
+  18:	30600050 	addik	r3, r0, 80
+  1c:	f8730020 	swi	r3, r19, 32
+  20:	e8d30020 	lwi	r6, r19, 32
+  24:	e8b3001c 	lwi	r5, r19, 28
+  28:	b0000000 	imm	0
+  2c:	b9f40000 	brlid	r15, 0
+  30:	80000000 	or	r0, r0, r0
+  34:	f8730024 	swi	r3, r19, 36
+  38:	80000000 	or	r0, r0, r0
+  3c:	e9e10000 	lwi	r15, r1, 0
+  40:	10330000 	addk	r1, r19, r0
+  44:	ea610028 	lwi	r19, r1, 40
+  48:	3021002c 	addik	r1, r1, 44
+  4c:	b60f0008 	rtsd	r15, 8
+  50:	80000000 	or	r0, r0, r0

@@ -1,0 +1,36 @@
+
+prova/main.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	00251000 	add	r1, r5, r2
+   4:	10211000 	addk	r1, r1, r2
+   8:	04211000 	rsub	r1, r1, r2
+   c:	20210070 	addi	r1, r1, 112
+  10:	3021ffec 	addik	r1, r1, -20
+  14:	34210014 	rsubik	r1, r1, 20
+  18:	90220001 	sra	r1, r2
+  1c:	80221800 	or	r1, r2, r3
+  20:	84221800 	and	r1, r2, r3
+  24:	88221800 	xor	r1, r2, r3
+  28:	8c221800 	andn	r1, r2, r3
+  2c:	a0220064 	ori	r1, r2, 100
+  30:	a4220064 	andi	r1, r2, 100
+  34:	a8220064 	xori	r1, r2, 100
+  38:	ac220064 	andni	r1, r2, 100
+  3c:	b81000c7 	brid	199		// 103
+  40:	b8340013 	brlid	r1, 19
+  44:	b60000c7 	rtsd	r0, 199
+  48:	b62000c7 	rtid	r0, 199
+  4c:	bc010122 	beqi	r1, 290		// 16e
+  50:	bc2201f3 	bnei	r2, 499		// 243
+  54:	bc4401b6 	blti	r4, 438		// 20a
+  58:	bc61012b 	blei	r1, 299		// 183
+  5c:	bc82012b 	bgti	r2, 299		// 187
+  60:	bca2012b 	bgei	r2, 299		// 18b
+  64:	c8232000 	lw	r1, r3, r4
+  68:	d8221800 	sw	r1, r2, r3
+  6c:	e82300e8 	lwi	r1, r3, 232
+  70:	f823017a 	swi	r1, r3, 378
