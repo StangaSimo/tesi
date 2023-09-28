@@ -10,17 +10,9 @@ main:
 	swi	r19,r1,8
 	addk	r19,r1,r0
 	swi	r0,r19,4
-	bri	$L2
-$L3:
 	lwi	r3,r19,4
 	addik	r3,r3,1
 	swi	r3,r19,4
-$L2:
-	lwi	r4,r19,4
-	addik	r3,r0,399	# 0x18f
-	cmp	r18,r4,r3
-	bgei	r18,$L3
-	nop
 	nop
 	addk	r1,r19,r0
 	lwi	r19,r1,8

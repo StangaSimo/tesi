@@ -3,6 +3,7 @@
 	.globl	main
 	.ent	main
 	.type	main, @function
+	
 main:
 	add	r1,r5,r2 
 	addk	r1,r1,r2

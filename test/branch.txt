@@ -1,0 +1,30 @@
+
+test/branch.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	20600008 	addi	r3, r0, 8
+   4:	2040fff8 	addi	r2, r0, -8
+   8:	20200000 	addi	r1, r0, 0
+   c:	20210001 	addi	r1, r1, 1
+  10:	2063ffff 	addi	r3, r3, -1
+  14:	9ca31000 	bge	r3, r2
+  18:	80000000 	or	r0, r0, r0
+  1c:	20600008 	addi	r3, r0, 8
+  20:	20210001 	addi	r1, r1, 1
+  24:	2063ffff 	addi	r3, r3, -1
+  28:	bca3fff8 	bgei	r3, -8		// 20
+  2c:	80000000 	or	r0, r0, r0
+  30:	20600008 	addi	r3, r0, 8
+  34:	20210001 	addi	r1, r1, 1
+  38:	2063ffff 	addi	r3, r3, -1
+  3c:	bea3fff8 	bgeid	r3, -8		// 34
+  40:	20210001 	addi	r1, r1, 1
+  44:	80000000 	or	r0, r0, r0
+  48:	2060fff8 	addi	r3, r0, -8
+  4c:	2040fff8 	addi	r2, r0, -8
+  50:	20210001 	addi	r1, r1, 1
+  54:	20630001 	addi	r3, r3, 1
+  58:	9c631000 	ble	r3, r2

@@ -2,20 +2,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct prova 
+struct prova
 {
-   int8_t n : 5;
-}; 
+  unsigned char n : 5;
+};
 
-void main () {
-   struct prova p; 
-   p.n = 17;
-   int8_t n = 17;
+void main()
+{
+  struct prova p;
+  p.n = 11;
+  int8_t n = 17;
 
-   if ((p.n & 0b00011111) == n)
-      printf("si\n");
-   else 
-      printf("no\n");
+  printf("char %c\n", p.n);
+
+  if (p.n == n)
+    printf("si\n");
+  else
+    printf("no\n");
 }
-
-

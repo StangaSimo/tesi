@@ -1,0 +1,16 @@
+
+test/sub.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	2040ffc9 	addi	r2, r0, -55
+   4:	20600375 	addi	r3, r0, 885
+   8:	04831000 	rsub	r4, r3, r2
+   c:	24240058 	rsubi	r1, r4, 88
+  10:	b0008000 	imm	-32768
+  14:	20e00001 	addi	r7, r0, 1
+  18:	21000004 	addi	r8, r0, 4
+  1c:	0c483800 	rsubc	r2, r8, r7
+  20:	00211000 	add	r1, r1, r2

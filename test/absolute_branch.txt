@@ -1,0 +1,20 @@
+
+test/absolute_branch.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	80000000 	or	r0, r0, r0
+   4:	b800001c 	bri	28		// 20
+   8:	80000000 	or	r0, r0, r0
+   c:	80000000 	or	r0, r0, r0
+  10:	20210014 	addi	r1, r1, 20
+  14:	2040002c 	addi	r2, r0, 44
+  18:	98081000 	bra	r2
+  1c:	80000000 	or	r0, r0, r0
+  20:	80000000 	or	r0, r0, r0
+  24:	2020001e 	addi	r1, r0, 30
+  28:	b8080008 	brai	8
+  2c:	80000000 	or	r0, r0, r0
+  30:	2021000a 	addi	r1, r1, 10

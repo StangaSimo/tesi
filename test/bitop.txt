@@ -1,0 +1,20 @@
+
+test/bitop.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	20400bb7 	addi	r2, r0, 2999
+   4:	20605d83 	addi	r3, r0, 23939
+   8:	84221800 	and	r1, r2, r3
+   c:	b0000001 	imm	1
+  10:	2080b667 	addi	r4, r0, -18841
+  14:	80212000 	or	r1, r1, r4
+  18:	90210001 	sra	r1, r1
+  1c:	00810000 	add	r4, r1, r0
+  20:	8c221800 	andn	r1, r2, r3
+  24:	88212000 	xor	r1, r1, r4
+  28:	b0000001 	imm	1
+  2c:	a021869f 	ori	r1, r1, -31073
+  30:	a42100e8 	andi	r1, r1, 232

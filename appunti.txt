@@ -15,24 +15,6 @@ little endian: ovvero il bit piu significante va in fondo e a[0] ha il meno sign
 
 xxd -b prova/main.text
 
-00251000
-00000000001001010001000000000000
+mb-gcc -o add.o -c add.s && objcopy -j .text -O binary -I elf32-little add.o add.text && mb-obj -dS add.o > add.txt
 
-00102500
-00000000000100000010010100000000
-
-
-00000000001001010001000000000000
-
-
-
-00000000001001010001000000000000
-00000000001001010001000000000000
-
-1111111011101100
-1111111111101100
-1111111101101100
-1111111011101100
-1111111111011100
-
-11101100
+Notare: Se si shifta a sinistra non c'è differenza, a destra il c fa uno shift aritmetico con i signed e logico con gli unisgned

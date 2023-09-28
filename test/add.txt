@@ -1,5 +1,5 @@
 
-prova.o:     file format elf32-microblaze
+test/add.o:     file format elf32-microblaze
 
 
 Disassembly of section .text:
@@ -10,6 +10,7 @@ Disassembly of section .text:
    8:	00821800 	add	r4, r2, r3
    c:	b0007fff 	imm	32767
   10:	20a0fff8 	addi	r5, r0, -8
-  14:	20c00009 	addi	r6, r0, 9
+  14:	20c00008 	addi	r6, r0, 8
   18:	10e53000 	addk	r7, r5, r6
   1c:	28240001 	addic	r1, r4, 1
+  20:	20210002 	addi	r1, r1, 2

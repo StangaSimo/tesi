@@ -1,0 +1,13 @@
+
+test/cmp.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	20400014 	addi	r2, r0, 20
+   4:	20600028 	addi	r3, r0, 40
+   8:	14821801 	cmp	r4, r2, r3
+   c:	b000f73f 	imm	-2241
+  10:	20a0fff6 	addi	r5, r0, -10
+  14:	14242803 	cmpu	r1, r4, r5

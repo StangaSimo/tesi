@@ -17,8 +17,8 @@ int main(int argc, char *argv[])
     struct Registers *reg = malloc(sizeof(struct Registers));
     reg = inizialize_registers(reg);
 
-    while (reg->pc/4 < instructions_size) 
-        run_instruction(instructions[reg->pc/4], data, reg, instructions);
+    while (reg->pc < instructions_size) 
+        run_instruction(instructions[reg->pc], data, reg, instructions, false);
 
     print_registers(reg);
 

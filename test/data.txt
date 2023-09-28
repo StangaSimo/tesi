@@ -1,0 +1,22 @@
+
+test/data.o:     file format elf32-microblaze
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	20400037 	addi	r2, r0, 55
+   4:	2060006f 	addi	r3, r0, 111
+   8:	d8620000 	sw	r3, r2, r0
+   c:	80000000 	or	r0, r0, r0
+  10:	80000000 	or	r0, r0, r0
+  14:	80000000 	or	r0, r0, r0
+  18:	c8820000 	lw	r4, r2, r0
+  1c:	20e00058 	addi	r7, r0, 88
+  20:	f8e00063 	swi	r7, r0, 99
+  24:	80000000 	or	r0, r0, r0
+  28:	80000000 	or	r0, r0, r0
+  2c:	80000000 	or	r0, r0, r0
+  30:	00600000 	add	r3, r0, r0
+  34:	e8600063 	lwi	r3, r0, 99
+  38:	00232000 	add	r1, r3, r4

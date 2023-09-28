@@ -5,7 +5,7 @@ struct Memory *inizialize_memory(int32_t size, struct Memory *data)
 {
     data->size = size;
     data->data = calloc(data->size, sizeof(int32_t));
-    memset(data->data, 0, sizeof(int32_t) *data->size);
+    memset(data->data, 0, sizeof(int32_t) * data->size);
     return data;
 }
 
@@ -29,283 +29,354 @@ struct Instruction *parse_instruction(int8_t *instr, int8_t type, struct Instruc
     if (type) /* Type A */
     {
         res->type = type;
-        res->rd = (instr[0] << 6) + (instr[1] >> 5);
-        res->ra = (instr[1] << 3) >> 3;
-        res->rb = instr[2] >> 3;
+        res->rd = (instr[0] << 3) + ((instr[1] >> 5) & 0b00000111);
+        res->ra = instr[1] & 0b00011111;
+        res->rb = (instr[2] >> 3) & 0b00011111;
     }
     else /* Type B */
     {
         res->type = type;
-        res->rd = (instr[0] << 6) + (instr[1] >> 5);
-        res->ra = (instr[1] << 3) >> 3;
+        res->rd = ((instr[0] << 3) & 0b00011000) + ((instr[1] >> 5) & 0b00000111);
+        res->ra = instr[1] & 0b00011111;
         int16_t n = instr[2];
-        n = n << 8;
+        n = (n << 8) + (((int16_t)instr[3]) & 0b0000000011111111);
 
         if (*im) /* imm istruction before */
         {
-            res->im = (((int32_t)*im) << 16) +(n + ((int16_t)instr[3] & 0b0000000011111111));
+            res->im = (*im << 16) + ((int32_t)n & 0b00000000000000001111111111111111);
             *im = 0;
-        } else 
-            res->im = (int32_t)(n + ((int16_t)instr[3] & 0b0000000011111111));
+        }
+        else
+            res->im = (int32_t)n;
     }
     return res;
 }
 
-void run_instruction(int8_t *instruction, struct Memory *data, struct Registers *reg, int8_t **instructions)
+void run_instruction(int8_t *instruction, struct Memory *data, struct Registers *reg, int8_t **instructions, bool delay)
 {
     struct Instruction *instr = malloc(sizeof(struct Instruction));
-    bool carry=0; //carry
-    instr->opcode = instruction[0] >> 2;
+    bool carry = 0; // carry
+    instr->opcode = (instruction[0] >> 2) & 0b00111111;
     int8_t op_code = (instruction[0] >> 2) & 0b00111111; /* remove last 11 bitfield is not working for the == operand*/
 
-    if (op_code == 0x0)           /* ADD 000000 */ 
-    { 
-        instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(reg->r[instr->ra] + reg->r[instr->rb]),&carry);
-        update_PC(reg,4);
-
-    } else if (op_code == 0x4)    /* ADDK 000100 */
+    if (op_code == 0x0) /* ADD 000000 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(reg->r[instr->ra] + reg->r[instr->rb]),&carry);
-        reg->c = carry;
-        update_PC(reg,4);
-
-    } else if (op_code == 0x2)    /* ADDC 000010 */
+        reg->r[instr->rd] = add_Check_Overflow(reg->r[instr->ra], reg->r[instr->rb], &carry);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x4) /* ADDK 000100 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(reg->r[instr->ra] + reg->r[instr->rb] + reg->c),&carry);
-        update_PC(reg,4);
-
-    } else if (op_code == 0x6)    /* ADDCK 000110 */
+        reg->r[instr->rd] = add_Check_Overflow(reg->r[instr->ra], reg->r[instr->rb], &carry);
+        reg->c = carry;
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x2) /* ADDC 000010 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(reg->r[instr->ra] + reg->r[instr->rb] + reg->c),&carry);
-        reg->c = carry;
-        update_PC(reg,4);
-
-    } else if (op_code == 0x8)   /* ADDI 001000 */
-    {
-        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(instr->im + reg->r[instr->ra]),&carry);
-        update_PC(reg,4);
-
-    } else if (op_code == 0xA)   /* ADDIC 001010 */
-    {
-        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(instr->im + reg->r[instr->ra] + reg->c),&carry);
-        update_PC(reg,4);
-
-    } else if (op_code == 0xC)   /* ADDIK 001100 */
-    {
-        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(instr->im + reg->r[instr->ra]),&carry);
-        reg->c = carry;
-        update_PC(reg,4);
-
-    } else if (op_code == 0xE)   /* ADDICK 001110 */
-    {
-        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(instr->im + reg->r[instr->ra] + reg->c),&carry);
-        reg->c = carry;
-        update_PC(reg,4);
-
-    } else if (op_code == 0x1)    /* RSUB 000001 */
+        reg->r[instr->rd] = add_Check_Overflow(reg->r[instr->ra], reg->r[instr->rb] + reg->c, &carry);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x6) /* ADDCK 000110 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(reg->r[instr->rb] + (~reg->r[instr->ra] + 1)),&carry);
-        update_PC(reg,4);
-
-    } else if (op_code == 0x3)   /* RSUBC 000011 */
+        reg->r[instr->rd] = add_Check_Overflow(reg->r[instr->ra], reg->r[instr->rb] + reg->c, &carry);
+        reg->c = carry;
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x8) /* ADDI 001000 */
+    {
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        reg->r[instr->rd] = add_Check_Overflow(instr->im, reg->r[instr->ra], &carry);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0xA) /* ADDIC 001010 */
+    {
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        reg->r[instr->rd] = add_Check_Overflow(instr->im, reg->r[instr->ra] + reg->c, &carry);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0xC) /* ADDIK 001100 */
+    {
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        reg->r[instr->rd] = add_Check_Overflow(instr->im, reg->r[instr->ra], &carry);
+        reg->c = carry;
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0xE) /* ADDICK 001110 */
+    {
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        reg->r[instr->rd] = add_Check_Overflow(instr->im, reg->r[instr->ra] + reg->c, &carry);
+        reg->c = carry;
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x1) /* RSUB 000001 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(reg->r[instr->rb] + (~reg->r[instr->ra] + 1) + reg->c),&carry);
-        update_PC(reg,4);
-
-    } else if (op_code == 0x5)   /* RSUBK 000101 */
+        reg->r[instr->rd] = add_Check_Overflow(reg->r[instr->rb], add_Check_Overflow(~reg->r[instr->ra], 1, &carry), &carry);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x3) /* RSUBC 000011 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(reg->r[instr->rb] + (~reg->r[instr->ra] + 1)),&carry);
-        reg->c = carry;
-        update_PC(reg,4);
-
-    } else if (op_code == 0x7)   /* RSUBCK 000111 */
+        reg->r[instr->rd] = add_Check_Overflow(reg->r[instr->rb], add_Check_Overflow(~reg->r[instr->ra], 1, &carry) + reg->c, &carry);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x5) /* RSUBK 000101 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(reg->r[instr->rb] + (~reg->r[instr->ra] + 1) + reg->c),&carry);
+        reg->r[instr->rd] = add_Check_Overflow(reg->r[instr->rb], add_Check_Overflow(~reg->r[instr->ra], 1, &carry), &carry);
         reg->c = carry;
-        update_PC(reg,4);
-
-    } else if (op_code == 0x9)   /* RSUBI 001001 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x7) /* RSUBCK 000111 */
     {
-        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(instr->im + (~reg->r[instr->ra] + 1)),&carry);
-        update_PC(reg,4);
-
-    } else if (op_code == 0xB)   /* RSUBIC 001011 */
-    {
-        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(instr->im + (~reg->r[instr->ra] + 1) + reg->c),&carry);
-        update_PC(reg,4);
-
-    } else if (op_code == 0xD)   /* RSUBIK 001101 */
-    {
-        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(instr->im + (~reg->r[instr->ra] + 1)),&carry);
+        instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
+        reg->r[instr->rd] = add_Check_Overflow(reg->r[instr->rb], add_Check_Overflow(~reg->r[instr->ra], 1, &carry) + reg->c, &carry);
         reg->c = carry;
-        update_PC(reg,4);
-
-    } else if (op_code == 0xF)   /* RSUBIKC 001111 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x9) /* RSUBI 001001 */
     {
         instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = checkOverflow((int64_t)(instr->im + (~reg->r[instr->ra] + 1) + reg->c ),&carry);
-        reg->c = carry;
-        update_PC(reg,4);
-
-    } else if (op_code == 0x24)  /* SRA 100100 */
+        reg->r[instr->rd] = add_Check_Overflow(instr->im, add_Check_Overflow(~reg->r[instr->ra], 1, &carry), &carry);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0xB) /* RSUBIC 001011 */
     {
-        //TODO: carry?
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        reg->r[instr->rd] = add_Check_Overflow(instr->im, add_Check_Overflow(~reg->r[instr->ra], 1, &carry) + reg->c, &carry);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0xD) /* RSUBIK 001101 */
+    {
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        reg->r[instr->rd] = add_Check_Overflow(instr->im, add_Check_Overflow(~reg->r[instr->ra], 1, &carry), &carry);
+        reg->c = carry;
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0xF) /* RSUBIKC 001111 */
+    {
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        reg->r[instr->rd] = add_Check_Overflow(instr->im, add_Check_Overflow(~reg->r[instr->ra], 1, &carry) + reg->c, &carry);
+        reg->c = carry;
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x24) /* SRA 100100 */
+    {
+        // TODO: carry?
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
         reg->r[instr->rd] = reg->r[instr->ra] >> 1;
         reg->c = carry;
-
-    } else if (op_code == 0x20)  /* OR 100000 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x20) /* OR 100000 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
         reg->r[instr->rd] = reg->r[instr->ra] | reg->r[instr->rb];
-        update_PC(reg,4);
-
-    } else if (op_code == 0x21)   /* AND 100001 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x21) /* AND 100001 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
         reg->r[instr->rd] = reg->r[instr->ra] & reg->r[instr->rb];
-        update_PC(reg,4);
-
-    } else if (op_code == 0x22)   /* XOR 100010 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x22) /* XOR 100010 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
         reg->r[instr->rd] = reg->r[instr->ra] ^ reg->r[instr->rb];
-        update_PC(reg,4);
-
-    } else if (op_code == 0x23)   /* ANDN 100011 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x23) /* ANDN 100011 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
         reg->r[instr->rd] = reg->r[instr->ra] & (~reg->r[instr->rb]);
-        update_PC(reg,4);
-
-    } else if (op_code == 0x28)   /* ORI 101000 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x28) /* ORI 101000 */
     {
         instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
         reg->r[instr->rd] = reg->r[instr->ra] | instr->im;
-        update_PC(reg,4);
-
-    } else if (op_code == 0x29)   /* ANDI 101001 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x29) /* ANDI 101001 */
     {
         instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
         reg->r[instr->rd] = reg->r[instr->ra] & instr->im;
-        update_PC(reg,4);
-
-    } else if (op_code == 0x2A)   /* XORI 101010 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x2A) /* XORI 101010 */
     {
         instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
         reg->r[instr->rd] = reg->r[instr->ra] ^ instr->im;
-        update_PC(reg,4);
-
-    } else if (op_code == 0xC)   /* ANDNI 001100 */
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x2B) /* ANDNI 101011 */
     {
         instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        reg->r[instr->rd] = reg->r[instr->ra]  & (~instr->im);
-        update_PC(reg,4);
-
-
-    } else if (op_code == 0x2E)   /****************************** B 100111 */
+        reg->r[instr->rd] = reg->r[instr->ra] & (~instr->im);
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x27) /****************************** BEQ BGE BGT BLE BLT BNE 100111 */
     {
         instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
-        int32_t delay = reg->pc + 1;
-        if (instr->rd == 0x10 || instr->rd == 0x0) /* BEQ */
-        {
-            if (cmp_reg(reg->r[instr->ra],0x0)) //TODO: ha senso andare in questa direzione? 
-                update_PC(reg, reg->r[instr->rb]);
-            else
-                update_PC(reg, 4);
-            if (instr->rd == 0x10) /* BEQD rd = 10000*/
-                run_instruction(instructions[delay], data, reg, instructions);
-        }
-        else if (instr->rd == 0x15 || 0x5)        /* BGE */
-        {
-            if (reg->r[instr->ra] >=  0x0)
-                update_PC(reg, reg->r[instr->rb]);
-            else
-                update_PC(reg, 4);
-            if (instr->rd == 0x15) /* BEGD */
-                run_instruction(instructions[delay], data, reg, instructions);
-        }
+        int32_t delayed_instruction = reg->pc + 1; /* next istruction for delayed branch*/
+        int8_t branch_type = conv_reg(instr->rd) & 0b00001111;
+        int8_t is_delayed = conv_reg(instr->rd) & 0b00010000;
+
+        if (branch_type == 0x0 && reg->r[instr->ra] == 0x0) /* BEQ D0000 */
+            update_PC(reg, reg->r[instr->rb], delay);
+        else if (branch_type == 0x5 && reg->r[instr->ra] >= 0x0) /* BGE D0101 */
+            update_PC(reg, reg->r[instr->rb], delay);
+        else if (branch_type == 0x4 && reg->r[instr->ra] > 0x0) /* BGT D0100 */
+            update_PC(reg, reg->r[instr->rb], delay);
+        else if (branch_type == 0x3 && reg->r[instr->ra] <= 0x0) /* BLE D0011 */
+            update_PC(reg, reg->r[instr->rb], delay);
+        else if (branch_type == 0x2 && reg->r[instr->ra] < 0x0) /* BLT D0010 */
+            update_PC(reg, reg->r[instr->rb], delay);
+        else if (branch_type == 0x1 && reg->r[instr->ra] != 0x0) /* BNE D0001 */
+            update_PC(reg, reg->r[instr->rb], delay);
+        else
+            update_PC(reg, 4, delay);
+
+        if (is_delayed == 0x10) /* delayed slot */
+            run_instruction(instructions[delayed_instruction], data, reg, instructions, true);
     }
-    else if (op_code == 0x2F)    /******************************  BI 101111 */
+    else if (op_code == 0x2F) /******************************  BEQI BGEI BGTI BLEI BLTI BNEI 101111 */
     {
         instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
-        int32_t delay = reg->pc + 1;
-        if (instr->rd == 0x10 || instr->rd == 0x0) /* BEQI */
-        {
-            printf("ci sono %d r1 %d\n",reg->r[instr->ra],reg->r[1]);
-            if (reg->r[instr->ra] == 0x0)
-                update_PC(reg, instr->im);
-            else
-                update_PC(reg, 4);
-            if (instr->rd == 0x10) /* BEQD */
-                run_instruction(instructions[delay], data, reg, instructions);
-        }
-        else if (instr->rd == 0x15 || 0x5) /* BGEI */
-        {
-            if (reg->r[instr->ra] >=  0x0)
-                update_PC(reg, reg->r[instr->rb]);
-            else
-                update_PC(reg, 4);
-            if (instr->rd == 0x15) /* BGEID */
-                run_instruction(instructions[delay], data, reg, instructions);
-        }
+        int32_t delayed_instruction = reg->pc + 1; /* next istruction for delayed branch*/
+        int8_t branch_type = conv_reg(instr->rd) & 0b00001111;
+        int8_t is_delayed = conv_reg(instr->rd) & 0b00010000;
+
+        if (branch_type == 0x0 && reg->r[instr->ra] == 0x0) /* BEQI D0000 */
+            update_PC(reg, instr->im, delay);
+        else if (branch_type == 0x5 && reg->r[instr->ra] >= 0x0) /* BGEI D0101 */
+            update_PC(reg, instr->im, delay);
+        else if (branch_type == 0x4 && reg->r[instr->ra] > 0x0) /* BGTI D0100 */
+            update_PC(reg, instr->im, delay);
+        else if (branch_type == 0x3 && reg->r[instr->ra] <= 0x0) /* BLEI D0011 */
+            update_PC(reg, instr->im, delay);
+        else if (branch_type == 0x2 && reg->r[instr->ra] < 0x0) /* BLTI D0010 */
+            update_PC(reg, instr->im, delay);
+        else if (branch_type == 0x1 && reg->r[instr->ra] != 0x0) /* BNEI D0001 */
+            update_PC(reg, instr->im, delay);
+        else
+            update_PC(reg, 4, delay);
+
+        if (is_delayed == 0x10) /* delayed slot */
+            run_instruction(instructions[delayed_instruction], data, reg, instructions, true);
     }
-    else if (op_code == 0x2E) /* BRI 101110 */
+    else if (op_code == 0x26) /* BR BRD BRA BRLD BRAD BRALD 101110 */
     {
+        instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
+        int32_t delayed_instruction = reg->pc + 1; /* next istruction for delayed branch*/
+
+        /* DAL00 */
+        int8_t is_absolute = conv_reg(instr->ra) & 0b00001000; /* A for branch with absolute PC = rb */
+        int8_t is_link = conv_reg(instr->ra) & 0b00000100;     /* L for branch and link rd = PC */
+        int8_t is_delayed = conv_reg(instr->ra) & 0b00010000;
+
+        if (is_link == 0x4)
+            reg->r[conv_reg(instr->rd)] = reg->pc*4;
+
+        if (is_absolute == 0x8)
+            reg->pc = (reg->r[conv_reg(instr->rb)])/4;
+        else
+            update_PC(reg, reg->r[instr->rb], delay);
+        
+        if (is_delayed == 0x10) /* delayed slot */
+            run_instruction(instructions[delayed_instruction], data, reg, instructions, true);
+    }
+    else if (op_code == 0x2E) /* BRI BRAI BRID BRAID BRLID BRAILD 101110 */
+    {
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        int32_t delayed_instruction = reg->pc + 1; /* next istruction for delayed branch*/
+
+        /* DAL00 */
+        int8_t is_absolute = conv_reg(instr->ra) & 0b00001000; /* A for branch with absolute PC = rb */
+        int8_t is_link = conv_reg(instr->ra) & 0b00000100;     /* L for branch and link rd = PC */
+        int8_t is_delayed = conv_reg(instr->ra) & 0b00010000;
+
+        if (is_link == 0x4)
+            reg->r[conv_reg(instr->rd)] = reg->pc*4;
+
+        if (is_absolute == 0x8)
+            reg->pc = instr->im/4;
+        else
+            update_PC(reg, instr->im, delay);
+
+        if (is_delayed == 0x10) /* delayed slot */
+            run_instruction(instructions[delayed_instruction], data, reg, instructions, true);
+    }
+    else if (op_code == 0xC) /* CMP 101101 */
+    {
+        /* last 8 bit 00000011  then cmpu */
+        instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
+        if (instruction[3] == 0x3) {
+            reg->r[instr->rd] = ((uint32_t)reg->r[instr->rb]) + (~((uint32_t)reg->r[instr->ra]) + 1);
+
+            if (((uint32_t)reg->r[instr->ra]) > ((uint32_t)reg->r[instr->rb]))
+                reg->r[instr->rd] = (reg->r[instr->rd] & 0x7FFFFFFF) + 0x80000000; /* (rD)(MSB) ← (rA) > (rB) */
+        } else {
+            reg->r[instr->rd] =reg->r[instr->rb] + (~reg->r[instr->ra] + 1);
+
+            if (reg->r[instr->ra] > reg->r[instr->rb])
+                reg->r[instr->rd] = (reg->r[instr->rd] & 0x7FFFFFFF) + 0x80000000; 
+        }
+        update_PC(reg, 4, delay);
 
     }
-    else if (op_code == 0xC) /* RTSD 101101 */
+    else if (op_code == 0x2D) /* RTSD 101101 */
     {
-
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        int32_t delayed_instruction = reg->pc + 1; /* next istruction for delayed branch*/
+        if (conv_reg(instr->rd) == 0x10) {
+            reg->pc = (reg->r[instr->ra] + instr->im)/4;
+            run_instruction(instructions[delayed_instruction], data, reg, instructions, true);
+        }
     }
-    else if (op_code == 0xC) /* RTID 101101 */
+    else if (op_code == 0x32) /* LW 110010 */
     {
-    //} else if (op_code   == 0xC)  /* BEQI 101111 */
-    //{
-    //} else if (op_code   == 0xC)  /* BNEI 101111 */
-    //{
-    //} else if (op_code   == 0xC)  /* BLTI 101111 */
-    //{
-    //} else if (op_code   == 0xC)  /* BLEI 101111 */
-    //{
-    //} else if (op_code   == 0xC)  /* BGTI 001100 */
-    //{
-    //} else if (op_code   == 0xC)  /* BGEI 001100 */
-    //{
-    } else if (op_code == 0xC)  /* LW 110010 */
+        instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
+        uint32_t addr = (uint32_t)(reg->r[instr->ra] + reg->r[instr->rb]);
+        reg->r[instr->rd] = data->data[addr];
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x36) /* SW 110110 */
     {
-    } else if (op_code == 0xC)  /* SW 110110 */
+        instr = parse_instruction(instruction, TYPE_A, instr, &reg->im);
+        uint32_t addr = (uint32_t)(reg->r[instr->ra] + reg->r[instr->rb]);
+        data->data[addr] = reg->r[instr->rd];
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x3A) /* LWI 111010 */
     {
-    } else if (op_code == 0xC)  /* LWI 111010 */
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        uint32_t addr = (uint32_t)(reg->r[instr->ra] + instr->im);
+        reg->r[instr->rd] = data->data[addr] ;
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x3E) /* SWI 111110 */
     {
-    } else if (op_code == 0xC)  /* SWI 111110 */
+        instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
+        uint32_t addr = (uint32_t)(reg->r[instr->ra] + instr->im);
+        data->data[addr] = reg->r[instr->rd];
+        update_PC(reg, 4, delay);
+    }
+    else if (op_code == 0x2C) /* IMM 101100 */
     {
-    } else if (op_code == 0xC)  /* NOP 001100 */
-    {
-    } else if (op_code == 0x2C)  /* IMM 101100 */
-    {
-        //TODO: don't know if it works: Fatal error: An IMM instruction should not be present in the .s file
         instr = parse_instruction(instruction, TYPE_B, instr, &reg->im);
         reg->im = instr->im;
-        update_PC(reg,4);
-    } else {
+        update_PC(reg, 4, delay);
+    }
+    else
+    {
         printf("unknown istruction\n");
-    } 
+    }
+    printf("99: %d\n",data->data[99]);
 }
 
 void print_instr(struct Instruction *res, int8_t *instr)
@@ -334,7 +405,7 @@ void print_instr(struct Instruction *res, int8_t *instr)
         printf("\nim: ");
         for (int z = 15; 0 <= z; z--)
             printf("%c", (res->im & (1 << z)) ? '1' : '0');
-        printf("  intero: %d ",(res->im)); /* complemento 2 */
+        printf("  intero: %d ", (res->im)); /* complemento 2 */
     }
     printf("\n");
 }
@@ -361,31 +432,36 @@ void print_registers(struct Registers *reg)
     printf("\n===========================================================================\n");
 }
 
-int32_t checkOverflow(int64_t n, bool *c) {
-    if (n > INT32_MAX) 
+// TODO: carry even in underflow?
+int32_t add_Check_Overflow(int32_t a, int32_t b, bool *c)
+{
+    int64_t res = (int64_t)a + (int64_t)b; /* only last 32 bit*/
+    if (res > INT32_MAX)
     {
         *c = true;
-        return INT32_MAX;
-    } 
-    *c = false;
-    return (int32_t)n;
+        res = INT32_MAX;
+    }
+    else if (res < INT32_MIN) /* underflow */
+    {
+
+        *c = true;
+        res = INT32_MIN;
+    }
+    else
+    {
+        *c = false;
+    }
+
+    return (int32_t)res;
 }
 
-void update_PC(struct Registers *reg,int32_t n) 
+void update_PC(struct Registers *reg, int32_t n, bool delay)
 {
-    reg->pc = reg->pc + n/4;
+    if (!delay) /* Note: if the instruction is in a delay slot, it shouldn't modify the pc reg*/
+        reg->pc = reg->pc + n / 4;
 }
 
-bool cmp_opcode(int8_t a,int8_t b)
+int8_t conv_reg(int8_t n)
 {
-    if ((a & 0b0011111) == b)
-        return true;
-    return false;
-}
-
-bool cmp_reg(int8_t a,int8_t b) 
-{
-    if ((a & 0b0001111) == b)
-        return true;
-    return false;
+    return n & 0b00011111;
 }
