@@ -9,7 +9,7 @@
 #define ABSOLUTE_BRANCH_RESULT 60
 #define CMP_RESULT -146800670
 #define DATA_RESULT 199
-#define DEBUG 
+//#define DEBUG 
 
 bool test (char* file,int32_t n) 
 {
